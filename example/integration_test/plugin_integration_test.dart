@@ -4,13 +4,9 @@ import 'package:flutter_ssl_pinning/flutter_ssl_pinning.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 🔐 Initialize SSL pinning
   await SslPinning.initialize(
     pins: {
-      "google.com": [
-        // ⚠️ Replace with REAL SHA256 SPKI pin
-        "sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
-      ],
+      "google.com": ["sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="],
     },
   );
 
@@ -23,8 +19,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const MaterialApp(
-      debugShowCheckedModeBanner: false,
       home: HomePage(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
@@ -40,16 +36,13 @@ class _HomePageState extends State<HomePage> {
   String result = "Not tested";
 
   Future<void> testApi() async {
-    setState(() {
-      result = "Testing...";
-    });
+    setState(() => result = "Testing...");
 
     try {
-      // ⚠️ This will ONLY be protected if your native layer is enforcing pinning
-      final response = await Uri.parse("https://google.com").resolveUri(Uri());
+      final response = await SslPinning.request("https://google.com");
 
       setState(() {
-        result = "SUCCESS (200)";
+        result = "SUCCESS: $response";
       });
     } catch (e) {
       setState(() {

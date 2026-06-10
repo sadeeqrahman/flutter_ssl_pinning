@@ -20,22 +20,19 @@ class FlutterSslPinningPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
         when (call.method) {
 
             "init" -> {
-                val pins = call.argument<Map<String, List<String>>>("pins")
+                val pins =
+                    call.argument<Map<String, List<String>>>("pins")
 
                 val builder = CertificatePinner.Builder()
 
                 pins?.forEach { (host, pinList) ->
                     pinList.forEach { pin ->
-
-                        // IMPORTANT: must already include sha256/
-                        builder.add(host, pin)
+                        builder.add(host, pin) // MUST be sha256/...
                     }
                 }
 
-                val pinner = builder.build()
-
                 client = OkHttpClient.Builder()
-                    .certificatePinner(pinner)
+                    .certificatePinner(builder.build())
                     .build()
 
                 result.success(true)
@@ -43,19 +40,30 @@ class FlutterSslPinningPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
 
             "request" -> {
 
+                val clientSafe = client
+
+                if (clientSafe == null) {
+                    result.error(
+                        "NOT_INIT",
+                        "SSL Pinning not initialized",
+                        null
+                    )
+                    return
+                }
+
                 val url = call.argument<String>("url")!!
 
-                val req = Request.Builder()
+                val request = Request.Builder()
                     .url(url)
                     .build()
 
                 try {
-                    val response = client!!.newCall(req).execute()
+                    val response = clientSafe.newCall(request).execute()
                     result.success(response.body?.string())
                 } catch (e: Exception) {
                     result.error(
                         "SSL_ERROR",
-                        "SSL Handshake failed: ${e.message}",
+                        e.message ?: "SSL handshake failed",
                         null
                     )
                 }

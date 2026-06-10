@@ -1,19 +1,22 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
-import 'flutter_ssl_pinning_platform_interface.dart';
+class FlutterSslPinningMethodChannel {
+  static const MethodChannel _channel = MethodChannel('flutter_ssl_pinning');
 
-/// An implementation of [FlutterSslPinningPlatform] that uses method channels.
-class MethodChannelFlutterSslPinning extends FlutterSslPinningPlatform {
-  /// The method channel used to interact with the native platform.
-  @visibleForTesting
-  final methodChannel = const MethodChannel('flutter_ssl_pinning');
+  /// Initialize SSL pins on native side
+  Future<void> initialize(Map<String, List<String>> pins) async {
+    await _channel.invokeMethod('init', {
+      'pins': pins,
+    });
+  }
 
-  @override
-  Future<String?> getPlatformVersion() async {
-    final version = await methodChannel.invokeMethod<String>(
-      'getPlatformVersion',
+  /// Perform SSL pinned request via native layer
+  Future<String> request(String url) async {
+    final result = await _channel.invokeMethod(
+      'request',
+      {'url': url},
     );
-    return version;
+
+    return result.toString();
   }
 }
